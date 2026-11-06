@@ -1,0 +1,9 @@
+[submodule "sdk"]
+	path = sdk
+	url = ./sdk
+[submodule "backend"]
+	path = backend
+	url = ./backend
+[submodule "web"]
+	path = web
+	url = ./web
