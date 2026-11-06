@@ -3,7 +3,7 @@
 #
 # Installs what the three sibling projects need beyond the base image:
 #   * wasm32 target + trunk  -> web/  (Leptos client)
-#   * docker + compose       -> backend/ (Postgres for local development)
+#   * docker + compose       -> recommender/ (Postgres for local development)
 #
 # Everything here is idempotent so it can be re-run by hand.
 set -euo pipefail
@@ -32,8 +32,8 @@ docker --version
 docker compose version || true
 
 echo "== postgres =="
-docker compose -f backend/compose.yml up -d || {
-    echo "postgres did not start; run 'docker compose -f backend/compose.yml up -d' later" >&2
+docker compose -f recommender/compose.yml up -d || {
+    echo "postgres did not start; run 'docker compose -f recommender/compose.yml up -d' later" >&2
 }
 
 echo "== done =="

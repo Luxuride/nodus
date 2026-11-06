@@ -1,5 +1,5 @@
 {
-  "name": "Nodus workspace (sdk + backend + web)",
+  "name": "Nodus workspace (sdk + recommender + web)",
   "image": "mcr.microsoft.com/devcontainers/rust:1",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
@@ -21,7 +21,7 @@
     "DATABASE_URL": "postgres://nodus:nodus@host.docker.internal:5432/nodus"
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  "postStartCommand": "docker compose -f backend/compose.yml up -d || true",
+  "postStartCommand": "docker compose -f recommender/compose.yml up -d || true",
   "customizations": {
     "vscode": {
       "extensions": ["rust-lang.rust-analyzer", "tamasfe.even-better-toml"],

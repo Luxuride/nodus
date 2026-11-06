@@ -10,13 +10,14 @@ three projects that make up the system.
 | Submodule | Repository | What it is |
 | --- | --- | --- |
 | `sdk/` | `nodus-sdk` | The client SDK: wire contract, Mastodon domain model, and the client state machine (`AppState`, `Command`, four ports). Source of truth for client state. |
-| `backend/` | `nodus-backend` | Recommendation engine, background sync worker, API, database migrations. |
+| `recommender/` | `nodus-recommender` | Recommendation engine, background sync worker, API, database migrations. |
 | `web/` | `nodus-web` | Leptos/CSR web client. Renders SDK state; owns no Mastodon logic. |
 
-The boundary is deliberate: the backend computes rankings and never renders; the
+The boundary is deliberate: the recommender computes rankings and never renders; the
 web client renders and never scores; the SDK sits between them and is the only
 place that knows what the client's state looks like. See
-[`backend/docs/08-sdk.md`](backend/docs/08-sdk.md) and
+[`sdk/docs/`](sdk/docs/README.md) (start with
+[02-architecture.md](sdk/docs/02-architecture.md)) and
 [`web/docs/02-architecture.md`](web/docs/02-architecture.md).
 
 ## Layout
@@ -24,13 +25,13 @@ place that knows what the client's state looks like. See
 ```text
 Nodus/
 ├── .devcontainer/        Rust 1.99, wasm32 target, trunk, docker CLI, zsh
-├── .gitmodules           sdk → backend → web
-├── sdk/                  crates/{shared,mastodon,sdk}
-│   └── README.md         start here for the SDK
-├── backend/
+├── .gitmodules           sdk → recommender → web
+├── sdk/                  crates/{shared,instance,sdk}
+│   └── docs/             README, 01-scope … 04-roadmap
+├── recommender/
 │   ├── compose.yml       Postgres 17 + pgvector
 │   ├── crates/           {core,store,ingest,api}
-│   └── docs/             README, 01-vision … 11-roadmap, decisions
+│   └── docs/             README, 01-vision … 10-roadmap, decisions
 └── web/
     ├── Trunk.toml
     ├── crates/web/       Leptos app
@@ -54,7 +55,7 @@ git submodule update --init --recursive
 Then, per project:
 
 ```bash
-# API + worker (backend/)
+# API + worker (recommender/)
 docker compose up -d
 cargo run --bin nodus-api
 
@@ -67,15 +68,17 @@ cd web && trunk serve --port 8080     # proxies /api to the API on :3000
 Documentation comes before code in this project, and it is split the same way the
 repositories are:
 
-- **Backend / system design** — [`backend/docs/`](backend/docs/README.md): vision,
-  architecture, data model, ingestion, similarity, ranking, API, SDK contract,
-  privacy, operations, roadmap, decisions.
+- **Backend / system design** — [`recommender/docs/`](recommender/docs/README.md): vision,
+  architecture, data model, ingestion, similarity, ranking, API, privacy,
+  operations, roadmap, decisions.
 - **Client** — [`web/docs/`](web/docs/README.md): scope and parity targets,
   architecture, data layer, UI, quality budgets.
-- **SDK** — [`sdk/README.md`](sdk/README.md).
+- **SDK** — [`sdk/docs/`](sdk/docs/README.md): scope, architecture and the client
+  state model, contract versioning, roadmap; [`sdk/README.md`](sdk/README.md) is the
+  crate overview.
 
-The contract between the two sides is versioned; see
-[`backend/docs/08-sdk.md`](backend/docs/08-sdk.md) § Versioning.
+The contract between the sides is versioned; see
+[`sdk/docs/03-contract.md`](sdk/docs/03-contract.md) § Version semantics.
 
 ## Status
 
@@ -97,4 +100,4 @@ Nodus is not affiliated with, endorsed by, or sponsored by Mastodon GmbH.
 compatibility — the mark never appears in the project, repository, crate or
 binary names, and no Mastodon artwork is used. The rules we follow, and the
 checklist for anything new, are in
-[`backend/docs/12-trademark.md`](backend/docs/12-trademark.md).
+[`recommender/docs/11-trademark.md`](recommender/docs/11-trademark.md).
