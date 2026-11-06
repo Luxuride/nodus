@@ -2,6 +2,9 @@
 **/*.rs.bk
 *.pdb
 
+# local agent instructions (shared with delegated workers, not published)
+.worker-brief.md
+
 # local environment / secrets
 .env
 .env.*
