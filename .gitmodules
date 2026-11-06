@@ -1,9 +1,9 @@
 [submodule "sdk"]
 	path = sdk
-	url = git@github.com:luxuride/mastodon-reccom-sdk.git
+	url = git@github.com:luxuride/nodus-sdk.git
 [submodule "backend"]
 	path = backend
-	url = git@github.com:luxuride/mastodon-reccom-backend.git
+	url = git@github.com:luxuride/nodus-backend.git
 [submodule "web"]
 	path = web
-	url = git@github.com:luxuride/mastodon-reccom-web.git
+	url = git@github.com:luxuride/nodus-web.git

@@ -17,13 +17,13 @@ rustup target add wasm32-unknown-unknown
 
 echo "== trunk (prebuilt, no cargo compile) =="
 if ! command -v trunk >/dev/null 2>&1; then
-  tmp="$(mktemp -d)"
-  curl -fsSL \
-    "https://github.com/trunk-rs/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz" \
-    -o "$tmp/trunk.tar.gz"
-  tar -xzf "$tmp/trunk.tar.gz" -C "$tmp"
-  sudo install -m 0755 "$tmp/trunk" /usr/local/bin/trunk
-  rm -rf "$tmp"
+    tmp="$(mktemp -d)"
+    curl -fsSL \
+        "https://github.com/trunk-rs/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz" \
+        -o "$tmp/trunk.tar.gz"
+    tar -xzf "$tmp/trunk.tar.gz" -C "$tmp"
+    sudo install -m 0755 "$tmp/trunk" /usr/local/bin/trunk
+    rm -rf "$tmp"
 fi
 trunk --version
 
@@ -33,7 +33,7 @@ docker compose version || true
 
 echo "== postgres =="
 docker compose -f backend/compose.yml up -d || {
-  echo "postgres did not start; run 'docker compose -f backend/compose.yml up -d' later" >&2
+    echo "postgres did not start; run 'docker compose -f backend/compose.yml up -d' later" >&2
 }
 
 echo "== done =="

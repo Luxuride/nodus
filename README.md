@@ -1,4 +1,4 @@
-# MastodonReccom
+# Nodus
 
 A recommendation engine for Mastodon — people to follow, derived from what
 similar people already follow, like and reply to — plus a web client that shows
@@ -9,9 +9,9 @@ three projects that make up the system.
 
 | Submodule | Repository | What it is |
 | --- | --- | --- |
-| `sdk/` | `mastodon-reccom-sdk` | The client SDK: wire contract, Mastodon domain model, and the client state machine (`AppState`, `Command`, four ports). Source of truth for client state. |
-| `backend/` | `mastodon-reccom-backend` | Recommendation engine, background sync worker, API, database migrations. |
-| `web/` | `mastodon-reccom-web` | Leptos/CSR web client. Renders SDK state; owns no Mastodon logic. |
+| `sdk/` | `nodus-sdk` | The client SDK: wire contract, Mastodon domain model, and the client state machine (`AppState`, `Command`, four ports). Source of truth for client state. |
+| `backend/` | `nodus-backend` | Recommendation engine, background sync worker, API, database migrations. |
+| `web/` | `nodus-web` | Leptos/CSR web client. Renders SDK state; owns no Mastodon logic. |
 
 The boundary is deliberate: the backend computes rankings and never renders; the
 web client renders and never scores; the SDK sits between them and is the only
@@ -22,7 +22,7 @@ place that knows what the client's state looks like. See
 ## Layout
 
 ```text
-MastodonReccom/
+Nodus/
 ├── .devcontainer/        Rust 1.99, wasm32 target, trunk, docker CLI, zsh
 ├── .gitmodules           sdk → backend → web
 ├── sdk/                  crates/{shared,mastodon,sdk}
@@ -40,8 +40,8 @@ MastodonReccom/
 ## Getting started
 
 ```bash
-git clone --recurse-submodules git@github.com:luxuride/MastodonReccom.git
-cd MastodonReccom
+git clone --recurse-submodules git@github.com:luxuride/Nodus.git
+cd Nodus
 code .          # reopen in the devcontainer; Postgres and the Rust toolchain come up with it
 ```
 
@@ -56,7 +56,7 @@ Then, per project:
 ```bash
 # API + worker (backend/)
 docker compose up -d
-cargo run --bin mastodon-reccom-api
+cargo run --bin nodus-api
 
 # client (web/)
 cd web && trunk serve --port 8080     # proxies /api to the API on :3000
@@ -89,3 +89,12 @@ instance.
 AGPL-3.0-or-later. A network service whose value is improved by user-contributed
 code should stay open to those users; AGPL also matches Mastodon itself, which
 keeps licensing of derived clients unambiguous.
+
+## Naming and trademarks
+
+Nodus is not affiliated with, endorsed by, or sponsored by Mastodon GmbH.
+"Mastodon" is a trademark of Mastodon GmbH and is used here only to describe
+compatibility — the mark never appears in the project, repository, crate or
+binary names, and no Mastodon artwork is used. The rules we follow, and the
+checklist for anything new, are in
+[`backend/docs/12-trademark.md`](backend/docs/12-trademark.md).
