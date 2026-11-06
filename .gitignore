@@ -1,0 +1,13 @@
+/target
+**/*.rs.bk
+*.pdb
+
+# local environment / secrets
+.env
+.env.*
+!.env.example
+
+# editor + OS noise
+.DS_Store
+.idea/
+*.iml
