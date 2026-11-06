@@ -43,6 +43,19 @@ their head.
 `match` over many kinds) is read top-to-bottom and splitting it into eight
 one-line functions makes it worse. Split when the *reasons to change* differ.
 
+## Edit with the tools, not with the shell
+
+`read` a file before changing it, and change it with `edit` — a whole-file write
+is for new files and rewrites you have actually read. Scripts that mutate source
+(`sed -i`, `python3 -c`, heredocs) have already produced two bad files here: a
+mistyped variable overwrote `routes/mod.rs` with the contents of `main.rs`, and a
+sed rename rewrote a type alias into `pub type UnitFuture<'a> = UnitFuture<'a>;`.
+The editor refuses an ambiguous anchor; a script does not.
+
+Shell stays for reading state (`git status`, `grep`, `wc -l`, `find`) and for
+commands no tool covers. A repo-wide mechanical rename is the exception, and only
+with `git diff` reviewed line by line afterwards.
+
 ## Other rules, stated once
 
 - Documentation says **why**; the code says what. A comment restating the line
