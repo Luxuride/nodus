@@ -1,9 +1,9 @@
 [submodule "sdk"]
 	path = sdk
-	url = ./sdk
+	url = git@github.com:luxuride/mastodon-reccom-sdk.git
 [submodule "backend"]
 	path = backend
-	url = ./backend
+	url = git@github.com:luxuride/mastodon-reccom-backend.git
 [submodule "web"]
 	path = web
-	url = ./web
+	url = git@github.com:luxuride/mastodon-reccom-web.git
