@@ -66,3 +66,9 @@ with `git diff` reviewed line by line afterwards.
 - Errors carry the reason a caller can act on (`feed_expired`, not `NotFound`).
 - A crate that reads state never talks to the network.
 - Commit messages explain the failure the change prevents.
+- **Commit messages are written to a file and passed with `-F`.** Two accidents in
+  this repository came from putting the message on the command line: a nested
+  heredoc left a literal shell line in a commit body, and a message containing
+  backticks had `cargo test` and two SQL identifiers executed by the shell before
+  `git` ever saw them. `write` the message to `/tmp/msg.txt`, then
+  `git commit -F /tmp/msg.txt`.
