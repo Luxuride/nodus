@@ -17,6 +17,23 @@ CSR from the second page on. That is the difference between a feed that can be
 crawled, shared and painted before JavaScript loads, and one that starts with a
 spinner.
 
+## Scope: every path, the session decides
+
+The server renders each route, public or private. The session cookie decides which
+of the two views is painted: a signed-out visitor gets the public page, an account
+holder gets the authenticated one with page 1 and its cursor in the markup. Neither
+is rendered and then replaced — the server never paints a stranger's page to an
+account holder, which is what makes "SSR only where we are sure" unnecessary.
+
+The client owns what a document cannot do: infinite scroll continuing the same
+cursor, streaming, optimistic actions, and the OAuth callback (which has nothing to
+render until it has exchanged a code).
+
+**Unknown is a state.** Whatever the server does not know must be rendered as
+missing, not as a default: a third state (`Option`), a disabled control, or nothing.
+A hydrated page then never changes a value the server already painted, and a client
+fetch never swaps content under the reader.
+
 ## What the server has and what the browser has
 
 The server *issues* the OAuth token, so it already holds it in `oauth_token`; an
