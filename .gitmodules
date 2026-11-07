@@ -1,9 +1,9 @@
 [submodule "sdk"]
 	path = sdk
-	url = git@github.com:luxuride/nodus-sdk.git
+	url = git@github.com:nodus-social/nodus-sdk.git
 [submodule "recommender"]
 	path = recommender
-	url = git@github.com:luxuride/nodus-recommender.git
+	url = git@github.com:nodus-social/nodus-recommender.git
 [submodule "web"]
 	path = web
-	url = git@github.com:luxuride/nodus-web.git
+	url = git@github.com:nodus-social/nodus-web.git
