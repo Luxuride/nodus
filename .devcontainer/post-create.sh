@@ -27,21 +27,9 @@ if ! command -v trunk >/dev/null 2>&1; then
 fi
 trunk --version
 
-echo "== tailwindcss (prebuilt, no node) =="
-# The web client's stylesheet is compiled by the Tailwind standalone CLI. Pinned:
-# a Tailwind minor can change which utilities exist, and the CSS is not reviewed on
-# every bump. `web/Trunk.toml` runs it as a pre-build hook.
-TAILWIND_VERSION="4.3.5"
-if ! command -v tailwindcss >/dev/null 2>&1; then
-    tmp="$(mktemp -d)"
-    curl -fsSL \
-        "https://github.com/tailwindlabs/tailwindcss/releases/download/v${TAILWIND_VERSION}/tailwindcss-linux-x64" \
-        -o "$tmp/tailwindcss"
-    chmod 0755 "$tmp/tailwindcss"
-    sudo install -m 0755 "$tmp/tailwindcss" /usr/local/bin/tailwindcss
-    rm -rf "$tmp"
-fi
-tailwindcss --help >/dev/null && echo "tailwindcss ${TAILWIND_VERSION}"
+# Tailwind and daisyUI are npm packages in `web/package.json`; the compiled stylesheet
+# (`web/crates/web/style/tailwind.css`) is committed, so this container needs no Node.
+# Regenerate CSS and the composer bundles on a machine with Node: `cd web && npm run build`.
 
 echo "== docker (shared host daemon) =="
 docker --version
