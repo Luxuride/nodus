@@ -1,22 +1,19 @@
 {
-  "name": "Nodus workspace (sdk + recommender + web)",
-  "image": "mcr.microsoft.com/devcontainers/rust:1",
+  "name": "Ubuntu",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "configureZshAsDefaultShell": true,
-      "installOhMyZsh": true,
-      "upgradePackages": false
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
     },
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
-      "moby": false,
-      "installDockerBuildx": true,
-      "installDockerComposeSwitch": true
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "latest",
+      "profile": "minimal",
+      "targets": "wasm32-unknown-unknown"
     }
   },
-  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway"
+  ],
   "containerEnv": {
     "DATABASE_URL": "postgres://nodus:nodus@host.docker.internal:5432/nodus"
   },
@@ -24,12 +21,24 @@
   "postStartCommand": "docker compose -f recommender/compose.yml up -d || true",
   "customizations": {
     "vscode": {
-      "extensions": ["rust-lang.rust-analyzer", "tamasfe.even-better-toml"],
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml"
+      ],
       "settings": {
         "rust-analyzer.check.command": "clippy",
         "editor.formatOnSave": true,
-        "[rust]": { "editor.defaultFormatter": "rust-lang.rust-analyzer" }
+        "[rust]": {
+          "editor.defaultFormatter": "rust-lang.rust-analyzer"
+        }
       }
     }
-  }
+  },
+  "mounts": [
+    {
+      "source": "/var/run/docker.sock",
+      "target": "/var/run/docker.sock",
+      "type": "bind"
+    }
+  ]
 }

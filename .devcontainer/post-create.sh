@@ -27,17 +27,32 @@ if ! command -v trunk >/dev/null 2>&1; then
 fi
 trunk --version
 
-# Tailwind and daisyUI are npm packages in `web/package.json`; the compiled stylesheet
-# (`web/crates/web/style/tailwind.css`) is committed, so this container needs no Node.
-# Regenerate CSS and the composer bundles on a machine with Node: `cd web && npm run build`.
+# Tailwind, daisyUI and the composer's bundles are npm packages in `web/package.json`.
+# `crates/web-client/build.rs` regenerates the stylesheet and the bundles from source, so
+# this container needs Node for the first build: `cd web && npm ci` once, then cargo does
+# the rest (`web/.gitignore` keeps the generated files out of the tree).
 
-echo "== docker (shared host daemon) =="
-docker --version
-docker compose version || true
+echo "== node =="
+node --version
 
-echo "== postgres =="
-docker compose -f recommender/compose.yml up -d || {
-    echo "postgres did not start; run 'docker compose -f recommender/compose.yml up -d' later" >&2
+echo "== npm packages =="
+(cd web && npm ci --silent --no-audit --no-fund) || {
+    echo "npm install did not finish; the first cargo build will retry it" >&2
 }
+
+# The docker CLI is only needed to drive the recommender's Postgres. The socket is mounted
+# regardless, so the check is about the client, not about access.
+if command -v docker >/dev/null 2>&1; then
+    echo "== docker (shared host daemon) =="
+    docker --version
+    docker compose version || true
+
+    echo "== postgres =="
+    docker compose -f recommender/compose.yml up -d || {
+        echo "postgres did not start; run 'docker compose -f recommender/compose.yml up -d' later" >&2
+    }
+else
+    echo "== docker: no CLI in the image; the host daemon is still reachable at /var/run/docker.sock =="
+fi
 
 echo "== done =="
