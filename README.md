@@ -10,7 +10,7 @@ project that makes up the system.
 | Submodule | Repository | What it is |
 | --- | --- | --- |
 | `sdk/` | `nodus-sdk` | The client SDK: shared model, Mastodon/Misskey adapters, client state machine (`AppState`, `Command`, four ports). Source of truth for client state. |
-| `server-sdk/` | `nodus-server-sdk` | Server-side protocol SDK: ActivityPub objects and federation primitives. |
+| `server-sdk/` | `nodus-server-sdk` | Server-side protocol SDK: ActivityPub core, opt-in reader, federation, implementation extensions and service auth. |
 | `hydrator/` | `nodus-hydrator` | Public federation reads: resolves profiles, posts, graphs and threads from origin instances. |
 | `recommender/` | `nodus-recommender` | Recommendation engine, background sync worker, API, database migrations. |
 | `web/` | `nodus-web` | Leptos SSR/CSR web client. Renders SDK state; owns no Mastodon logic. |
@@ -32,7 +32,7 @@ Nodus/
 ├── .gitmodules           sdk, server-sdk, hydrator, recommender, web, nodus-backend
 ├── sdk/                  crates/{shared,client-core,mastodon,misskey,client-sdk,runtime,state,discovery,persist,protocol}
 │   └── docs/             README, 01-scope … 06-crates
-├── server-sdk/           crates/{activitypub,federation,server}
+├── server-sdk/           crates/{activitypub-core,activitypub-client,activitypub,federation,extensions/{mastodon,nodus},service,server}
 ├── hydrator/             crates/{hydrator,service}
 ├── recommender/
 │   ├── compose.yml       Postgres 17 + pgvector
