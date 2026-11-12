@@ -1,0 +1,4 @@
+    Blocking waiting for file lock on package cache
+    Checking nodus-hydrator v0.1.0 (/var/home/lux/Projects/nodus/hydrator/crates/hydrator)
+    Checking nodus-hydrate v0.1.0 (/var/home/lux/Projects/nodus/hydrator/crates/service)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.45s
