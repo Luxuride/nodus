@@ -10,3 +10,9 @@
 [submodule "nodus-backend"]
 	path = nodus-backend
 	url = git@github.com:nodus-social/nodus-backend.git
+[submodule "hydrator"]
+	path = hydrator
+	url = git@github.com:nodus-social/nodus-hydrator.git
+[submodule "server-sdk"]
+	path = server-sdk
+	url = git@github.com:nodus-social/nodus-server-sdk.git
