@@ -28,6 +28,7 @@ pub enum Error {
 pub struct Hydrator {
     ap: ActivityPub,
     http: reqwest::Client,
+    search_token: Option<String>,
 }
 
 impl Hydrator {
@@ -41,6 +42,7 @@ impl Hydrator {
                 .user_agent("nodus-hydrator/0.1")
                 .build()
                 .unwrap_or_default(),
+            search_token: std::env::var("NODUS_HYDRATE_SEARCH_TOKEN").ok(),
         }
     }
 
@@ -234,7 +236,25 @@ impl Hydrator {
             urlencoding::encode(kind),
             urlencoding::encode(offset.unwrap_or("0"))
         );
-        let value = self.get(host, &format!("/api/v2/search?{encoded}")).await?;
+        let url = format!("https://{host}/api/v2/search?{encoded}");
+        let mut request = self.http.get(&url).header("accept", "application/json");
+        if let Some(token) = &self.search_token {
+            request = request.bearer_auth(token);
+        }
+        let response = request
+            .send()
+            .await
+            .map_err(|error| Error::Remote(error.to_string()))?;
+        if !response.status().is_success() {
+            return Err(Error::Remote(format!(
+                "{url} returned {}",
+                response.status()
+            )));
+        }
+        let value: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|error| Error::Remote(error.to_string()))?;
         Ok(Search {
             accounts: value
                 .get("accounts")

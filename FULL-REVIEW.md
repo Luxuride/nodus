@@ -20,23 +20,22 @@ Code size: web 31.8k Rust lines, recommender 21.6k, sdk 13.3k, hydrator 1.1k.
 
 ## Critical gaps
 
-1. **The hydrator does not persist.** It is a read-through cache (5 min, in memory):
-   `hydrator/crates/service/src/main.rs`. It never writes Postgres and never asks the
-   recommender to ingest. "Viewing fills the DB" is still false.
-2. **Misskey cannot be stored in the current schema.** `status.mastodon_id` is `bigint`
-   (`recommender/crates/store/migrations/0001_initial.sql:103`); Misskey note ids are
-   opaque strings and `refresh_account/fetch.rs::map_status` drops them on `parse::<i64>`.
-   Full Misskey hydration needs a text/external id or a separate remote-status table.
+1. **Hydrator writes still live in the calculator.** The service is read-through with a
+   5-minute process cache; it does not write Postgres itself. The public profile browse
+   path now enqueues `refresh_account`, which does persist (verified: 60 Misskey notes
+   written for `Colon_BR@misskey.io`).
+2. **Misskey storage is fixed by a compatibility key.** `status.remote_id` keeps the
+   opaque id; `status.mastodon_id` holds a stable FNV-1a hash for legacy joins. A future
+   schema can move to text ids without changing feed cursors.
 3. **The web server does not call the hydrator.** `web/crates/web-server/src/public_api.rs`
    still fetches origins directly. The hydrator exists on `10.0.1.17:8091` but the
    same-origin BFF has no `NODUS_HYDRATE_URL` client yet.
-4. **Hydrator search is not publicly usable.** Mastodon `/api/v2/search` returns 401
-   unauthenticated; `Hydrator::search` reports that error. It needs a per-host token or
-   should be removed from the public surface.
-5. **ActivityPub federation is transport-only.** `nodus-federation` has canonical
-   signature parsing and `Signer`/`Verifier`/`Delivery` seams, but no HTTP signing,
-   key fetch, inbox verification, replay protection or actor key cache. It is not yet a
-   federation implementation.
+4. **Hydrator search needs a token.** Mastodon `/api/v2/search` returns 401 anonymously;
+   `NODUS_HYDRATE_SEARCH_TOKEN` is now forwarded as a bearer token, otherwise search
+   reports the upstream 401.
+5. **ActivityPub federation is still partial.** `nodus-federation` now has real
+   RSA-SHA256 signing, verification and body digests behind `crypto`, but still no key
+   fetch/cache, inbox replay window or delivery loop.
 6. **Feed personalization is data-starved.** Production had 0 `interaction_event` rows,
    4 follow edges and few recent statuses. The vector profile (`interest.rs`) therefore
    clusters mostly followed-author text; `trending`/`recent` still dominate. Seeding
