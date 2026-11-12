@@ -95,9 +95,9 @@ instance.
 
 ## License
 
-AGPL-3.0-or-later. A network service whose value is improved by user-contributed
-code should stay open to those users; AGPL also matches Mastodon itself, which
-keeps licensing of derived clients unambiguous.
+AGPL-3.0-or-later. See [`LICENSE`](LICENSE). A network service whose value is
+improved by user-contributed code should stay open to those users; AGPL also
+matches Mastodon itself, which keeps licensing of derived clients unambiguous.
 
 ## Naming and trademarks
 
