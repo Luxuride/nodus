@@ -8,7 +8,7 @@ pub mod mastodon;
 mod misskey;
 pub mod types;
 
-pub use types::{Account, Emoji, Media, Page, Post};
+pub use types::{Account, Emoji, Media, Page, Post, Search};
 
 use nodus_activitypub_sdk::ActivityPub;
 
@@ -176,25 +176,93 @@ impl Hydrator {
         host: &str,
         id: &str,
         following: bool,
+        max_id: Option<&str>,
     ) -> Result<Page<Account>, Error> {
         let kind = if following { "following" } else { "followers" };
+        let suffix = max_id.map_or_else(String::new, |id| format!("&max_id={id}"));
         let value = match self
-            .get(host, &format!("/api/v1/accounts/{id}/{kind}?limit=40"))
+            .get(
+                host,
+                &format!("/api/v1/accounts/{id}/{kind}?limit=40{suffix}"),
+            )
             .await
         {
             Ok(value) => value,
-            Err(_) => return misskey::graph(self, host, id, following).await,
+            Err(_) => return misskey::graph(self, host, id, following, max_id).await,
         };
         let items = value
             .as_array()
             .ok_or_else(|| Error::Remote(format!("{kind} was not an array")))?;
+        let next = items
+            .last()
+            .and_then(|value| value.get("id"))
+            .and_then(|id| id.as_str().map(str::to_owned));
         Ok(Page {
             items: items
                 .iter()
                 .map(|value| mastodon::account(host, value))
                 .collect(),
-            next: None,
+            next,
         })
+    }
+
+    /// Read one instance description.
+    ///
+    /// # Errors
+    /// [`Error::Remote`] when the instance is unreachable.
+    pub async fn instance(&self, host: &str) -> Result<serde_json::Value, Error> {
+        if let Ok(value) = self.get(host, "/api/v1/instance").await {
+            return Ok(value);
+        }
+        misskey::instance(self, host).await
+    }
+
+    /// Search accounts and posts on one instance.
+    ///
+    /// # Errors
+    /// [`Error::Remote`] when the instance refuses the search.
+    pub async fn search(
+        &self,
+        host: &str,
+        query: &str,
+        kind: &str,
+        offset: Option<&str>,
+    ) -> Result<Search, Error> {
+        let encoded = format!(
+            "q={}&type={}&limit=20&offset={}",
+            urlencoding::encode(query),
+            urlencoding::encode(kind),
+            urlencoding::encode(offset.unwrap_or("0"))
+        );
+        let value = self.get(host, &format!("/api/v2/search?{encoded}")).await?;
+        Ok(Search {
+            accounts: value
+                .get("accounts")
+                .and_then(serde_json::Value::as_array)
+                .map(|items| {
+                    items
+                        .iter()
+                        .map(|value| mastodon::account(host, value))
+                        .collect()
+                })
+                .unwrap_or_default(),
+            posts: value
+                .get("statuses")
+                .and_then(serde_json::Value::as_array)
+                .map(|items| items.iter().map(mastodon::post).collect())
+                .unwrap_or_default(),
+        })
+    }
+
+    /// Read one public post.
+    ///
+    /// # Errors
+    /// [`Error::Remote`] when neither source can answer.
+    pub async fn status(&self, host: &str, id: &str) -> Result<Post, Error> {
+        if let Ok(value) = self.get(host, &format!("/api/v1/statuses/{id}")).await {
+            return Ok(mastodon::post(&value));
+        }
+        misskey::status(self, host, id).await
     }
 
     /// Read a thread from a Mastodon origin.

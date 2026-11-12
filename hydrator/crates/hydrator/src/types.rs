@@ -76,6 +76,15 @@ pub struct Emoji {
     pub url: String,
 }
 
+/// Search results from one origin.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Search {
+    /// Matching accounts.
+    pub accounts: Vec<Account>,
+    /// Matching posts.
+    pub posts: Vec<Post>,
+}
+
 /// A page of items.
 #[derive(Debug, Clone, Serialize)]
 pub struct Page<T> {

@@ -7,8 +7,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, Query, Request, State};
 use axum::http::StatusCode;
+use axum::http::header::AUTHORIZATION;
+use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
@@ -23,6 +25,7 @@ const TTL: Duration = Duration::from_secs(300);
 struct App {
     hydrator: Hydrator,
     cache: Arc<RwLock<HashMap<String, (Instant, Value)>>>,
+    token: Option<String>,
 }
 
 impl App {
@@ -88,8 +91,38 @@ struct PageQuery {
 }
 
 #[derive(Debug, Deserialize)]
+struct SearchQuery {
+    q: String,
+    #[serde(rename = "type", default = "search_type")]
+    kind: String,
+    offset: Option<String>,
+}
+
+fn search_type() -> String {
+    "accounts".to_owned()
+}
+
+#[derive(Debug, Deserialize)]
+struct GraphQuery {
+    max_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 struct UrlQuery {
     url: String,
+}
+
+async fn auth(State(app): State<Arc<App>>, request: Request, next: Next) -> Response {
+    if let Some(token) = &app.token
+        && request
+            .headers()
+            .get(AUTHORIZATION)
+            .and_then(|value| value.to_str().ok())
+            != Some(&format!("Bearer {token}"))
+    {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    next.run(request).await
 }
 
 async fn healthz() -> Json<Value> {
@@ -144,6 +177,7 @@ async fn ap_posts(
 async fn graph(
     State(app): State<Arc<App>>,
     Path((host, id, kind)): Path<(String, String, String)>,
+    Query(query): Query<GraphQuery>,
 ) -> Result<Json<Value>, Failure> {
     let following = match kind.as_str() {
         "followers" => false,
@@ -155,9 +189,47 @@ async fn graph(
             });
         }
     };
+    let key = format!("graph:{host}:{id}:{kind}:{:?}", query.max_id);
     app.cached(
-        format!("graph:{host}:{id}:{kind}"),
-        app.hydrator.graph(&host, &id, following),
+        key,
+        app.hydrator
+            .graph(&host, &id, following, query.max_id.as_deref()),
+    )
+    .await
+}
+
+async fn instance(
+    State(app): State<Arc<App>>,
+    Path(host): Path<String>,
+) -> Result<Json<Value>, Failure> {
+    app.cached(format!("instance:{host}"), app.hydrator.instance(&host))
+        .await
+}
+
+async fn search(
+    State(app): State<Arc<App>>,
+    Path(host): Path<String>,
+    Query(query): Query<SearchQuery>,
+) -> Result<Json<Value>, Failure> {
+    let key = format!(
+        "search:{host}:{}:{}:{:?}",
+        query.q, query.kind, query.offset
+    );
+    app.cached(
+        key,
+        app.hydrator
+            .search(&host, &query.q, &query.kind, query.offset.as_deref()),
+    )
+    .await
+}
+
+async fn status(
+    State(app): State<Arc<App>>,
+    Path((host, id)): Path<(String, String)>,
+) -> Result<Json<Value>, Failure> {
+    app.cached(
+        format!("status:{host}:{id}"),
+        app.hydrator.status(&host, &id),
     )
     .await
 }
@@ -199,6 +271,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Arc::new(App {
         hydrator: Hydrator::new(),
         cache: Arc::new(RwLock::new(HashMap::new())),
+        token: std::env::var("NODUS_HYDRATE_TOKEN").ok(),
     });
     let router = Router::new()
         .route("/healthz", get(healthz))
@@ -207,8 +280,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/v1/ap/replies", get(ap_replies))
         .route("/v1/account/{host}/{id}", get(account))
         .route("/v1/account/{host}/{id}/statuses", get(posts))
+        .route("/v1/status/{host}/{id}", get(status))
+        .route("/v1/instance/{host}", get(instance))
+        .route("/v1/search/{host}", get(search))
         .route("/v1/account/{host}/{id}/{kind}", get(graph))
         .route("/v1/thread/{host}/{id}", get(thread))
+        .layer(middleware::from_fn_with_state(app.clone(), auth))
         .with_state(app);
     let listener = tokio::net::TcpListener::bind(&listen).await?;
     tracing::info!(%listen, "hydrator listening");

@@ -90,7 +90,6 @@ fn number(value: Option<&Value>) -> u64 {
     value.and_then(Value::as_u64).unwrap_or_default()
 }
 
-
 #[cfg(test)]
 mod tests {
     use serde_json::json;

@@ -76,13 +76,18 @@ pub(crate) async fn graph(
     host: &str,
     id: &str,
     following: bool,
+    max_id: Option<&str>,
 ) -> Result<Page<Account>, Error> {
     let path = if following {
         "/api/users/following"
     } else {
         "/api/users/followers"
     };
-    let value = call(hydrator, host, path, json!({ "userId": id, "limit": 40 })).await?;
+    let mut body = json!({ "userId": id, "limit": 40 });
+    if let Some(max_id) = max_id {
+        body["untilId"] = json!(max_id);
+    }
+    let value = call(hydrator, host, path, body).await?;
     let array = value.as_array().cloned().unwrap_or_default();
     let accounts: Vec<Account> = array
         .iter()
@@ -103,6 +108,17 @@ pub(crate) async fn graph(
         items: accounts,
         next,
     })
+}
+
+pub(crate) async fn instance(hydrator: &Hydrator, host: &str) -> Result<serde_json::Value, Error> {
+    call(hydrator, host, "/api/meta", json!({})).await
+}
+
+pub(crate) async fn status(hydrator: &Hydrator, host: &str, id: &str) -> Result<Post, Error> {
+    let value = call(hydrator, host, "/api/notes/show", json!({ "noteId": id })).await?;
+    convert::status(value)
+        .map(post_out)
+        .ok_or_else(|| Error::Remote("notes/show is not a note".to_owned()))
 }
 
 pub(crate) async fn thread(hydrator: &Hydrator, host: &str, id: &str) -> Result<Vec<Post>, Error> {
