@@ -8,6 +8,8 @@ publish.workspace = true
 
 [dependencies]
 nodus-activitypub-sdk = { path = "../../../sdk/crates/activitypub", features = ["read", "native"] }
+nodus-instance = { path = "../../../sdk/crates/instance" }
+nodus-instance-misskey = { path = "../../../sdk/crates/instance-misskey" }
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -5,6 +5,7 @@
 //! same calls over HTTP.
 
 pub mod mastodon;
+mod misskey;
 pub mod types;
 
 pub use types::{Account, Emoji, Media, Page, Post};
@@ -48,6 +49,11 @@ impl Hydrator {
     /// # Errors
     /// [`Error::Remote`] when the actor cannot be read.
     pub async fn account_acct(&self, acct: &str) -> Result<Account, Error> {
+        if let Some((user, host)) = acct.rsplit_once('@')
+            && let Ok(account) = self.account_by_acct(host, user).await
+        {
+            return Ok(account);
+        }
         let actor = self.ap.actor(acct).await.map_err(remote)?;
         let host = acct.split_once('@').map_or("", |(_, host)| host);
         let followers = match actor.followers.as_deref() {
@@ -87,8 +93,21 @@ impl Hydrator {
     /// # Errors
     /// [`Error::Remote`] when the instance does not answer with an account.
     pub async fn account(&self, host: &str, id: &str) -> Result<Account, Error> {
-        let value = self.get(host, &format!("/api/v1/accounts/{id}")).await?;
-        Ok(mastodon::account(host, &value))
+        if let Ok(value) = self.get(host, &format!("/api/v1/accounts/{id}")).await {
+            return Ok(mastodon::account(host, &value));
+        }
+        misskey::account(self, host, id).await
+    }
+
+    async fn account_by_acct(&self, host: &str, user: &str) -> Result<Account, Error> {
+        let encoded = urlencoding::encode(user);
+        if let Ok(value) = self
+            .get(host, &format!("/api/v1/accounts/lookup?acct={encoded}"))
+            .await
+        {
+            return Ok(mastodon::account(host, &value));
+        }
+        misskey::lookup(self, host, user).await
     }
 
     /// Read a page of an ActivityPub outbox.
@@ -96,6 +115,12 @@ impl Hydrator {
     /// # Errors
     /// [`Error::Remote`] when the outbox cannot be read.
     pub async fn posts_acct(&self, acct: &str, page: Option<&str>) -> Result<Page<Post>, Error> {
+        if let Some((user, host)) = acct.rsplit_once('@')
+            && let Ok(account) = self.account_by_acct(host, user).await
+            && let Ok(posts) = self.posts(host, &account.id, page).await
+        {
+            return Ok(posts);
+        }
         let actor = self.ap.actor(acct).await.map_err(remote)?;
         let collection = match page {
             Some(url) => self.ap.page(url).await.map_err(remote)?,
@@ -124,12 +149,16 @@ impl Hydrator {
         max_id: Option<&str>,
     ) -> Result<Page<Post>, Error> {
         let suffix = max_id.map_or_else(String::new, |id| format!("&max_id={id}"));
-        let value = self
+        let value = match self
             .get(
                 host,
                 &format!("/api/v1/accounts/{id}/statuses?limit=20{suffix}"),
             )
-            .await?;
+            .await
+        {
+            Ok(value) => value,
+            Err(_) => return misskey::posts(self, host, id, max_id).await,
+        };
         let items = value
             .as_array()
             .ok_or_else(|| Error::Remote("statuses was not an array".to_owned()))?;
@@ -149,14 +178,21 @@ impl Hydrator {
         following: bool,
     ) -> Result<Page<Account>, Error> {
         let kind = if following { "following" } else { "followers" };
-        let value = self
+        let value = match self
             .get(host, &format!("/api/v1/accounts/{id}/{kind}?limit=40"))
-            .await?;
+            .await
+        {
+            Ok(value) => value,
+            Err(_) => return misskey::graph(self, host, id, following).await,
+        };
         let items = value
             .as_array()
             .ok_or_else(|| Error::Remote(format!("{kind} was not an array")))?;
         Ok(Page {
-            items: items.iter().map(|value| mastodon::account(host, value)).collect(),
+            items: items
+                .iter()
+                .map(|value| mastodon::account(host, value))
+                .collect(),
             next: None,
         })
     }
@@ -166,9 +202,13 @@ impl Hydrator {
     /// # Errors
     /// [`Error::Remote`] when the context cannot be read.
     pub async fn thread(&self, host: &str, id: &str) -> Result<Vec<Post>, Error> {
-        let value = self
+        let value = match self
             .get(host, &format!("/api/v1/statuses/{id}/context"))
-            .await?;
+            .await
+        {
+            Ok(value) => value,
+            Err(_) => return misskey::thread(self, host, id).await,
+        };
         let mut posts = Vec::new();
         for key in ["ancestors", "descendants"] {
             if let Some(items) = value.get(key).and_then(serde_json::Value::as_array) {

@@ -20,14 +20,17 @@ pub(crate) fn account(host: &str, value: &Value) -> Account {
 }
 
 pub(crate) fn post(value: &Value) -> Post {
-    let reblog = value.get("reblog");
+    let reblog = value.get("reblog").filter(|reblog| !reblog.is_null());
     let value = reblog.unwrap_or(value);
     Post {
         id: text(value.get("id")),
         url: text(value.get("url")),
         content: text(value.get("content")),
         published: text(value.get("created_at")),
-        sensitive: value.get("sensitive").and_then(Value::as_bool).unwrap_or(false),
+        sensitive: value
+            .get("sensitive")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
         spoiler_text: text(value.get("spoiler_text")),
         media: value
             .get("media_attachments")
@@ -77,9 +80,30 @@ fn text(value: Option<&Value>) -> String {
 }
 
 fn nonempty(value: Option<&Value>) -> Option<String> {
-    text(value).is_empty().then_some(None).unwrap_or_else(|| value.and_then(Value::as_str).map(str::to_owned))
+    value
+        .and_then(Value::as_str)
+        .filter(|text| !text.is_empty())
+        .map(str::to_owned)
 }
 
 fn number(value: Option<&Value>) -> u64 {
     value.and_then(Value::as_u64).unwrap_or_default()
+}
+
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    #[test]
+    fn a_status_without_a_boost_keeps_its_fields() {
+        let post = super::post(&json!({
+            "id": "1", "url": "https://example.social/@a/1",
+            "content": "<p>hello</p>", "created_at": "2026-01-01T00:00:00Z",
+            "reblog": null, "replies_count": 2
+        }));
+        assert_eq!(post.id, "1");
+        assert_eq!(post.content, "<p>hello</p>");
+        assert_eq!(post.replies_count, 2);
+    }
 }

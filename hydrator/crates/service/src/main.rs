@@ -31,12 +31,13 @@ impl App {
         F: Future<Output = Result<T, Error>>,
         T: serde::Serialize,
     {
-        if let Some((at, value)) = self.cache.read().await.get(&key) {
-            if at.elapsed() < TTL {
-                return Ok(Json(value.clone()));
-            }
+        if let Some((at, value)) = self.cache.read().await.get(&key)
+            && at.elapsed() < TTL
+        {
+            return Ok(Json(value.clone()));
         }
-        let value = serde_json::to_value(read.await?).map_err(|error| Failure::internal(error.to_string()))?;
+        let value = serde_json::to_value(read.await?)
+            .map_err(|error| Failure::internal(error.to_string()))?;
         self.cache
             .write()
             .await
@@ -95,17 +96,26 @@ async fn healthz() -> Json<Value> {
     Json(json!({ "ok": true }))
 }
 
-async fn ap_account(State(app): State<Arc<App>>, Query(query): Query<Acct>) -> Result<Json<Value>, Failure> {
-    app.cached(format!("acct:{}", query.acct), app.hydrator.account_acct(&query.acct))
-        .await
+async fn ap_account(
+    State(app): State<Arc<App>>,
+    Query(query): Query<Acct>,
+) -> Result<Json<Value>, Failure> {
+    app.cached(
+        format!("acct:{}", query.acct),
+        app.hydrator.account_acct(&query.acct),
+    )
+    .await
 }
 
 async fn account(
     State(app): State<Arc<App>>,
     Path((host, id)): Path<(String, String)>,
 ) -> Result<Json<Value>, Failure> {
-    app.cached(format!("account:{host}:{id}"), app.hydrator.account(&host, &id))
-        .await
+    app.cached(
+        format!("account:{host}:{id}"),
+        app.hydrator.account(&host, &id),
+    )
+    .await
 }
 
 async fn posts(
@@ -184,7 +194,8 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap_or_else(|_| "nodus_hydrate=info".into()),
         )
         .init();
-    let listen = std::env::var("NODUS_HYDRATE_LISTEN").unwrap_or_else(|_| "127.0.0.1:8091".to_owned());
+    let listen =
+        std::env::var("NODUS_HYDRATE_LISTEN").unwrap_or_else(|_| "127.0.0.1:8091".to_owned());
     let app = Arc::new(App {
         hydrator: Hydrator::new(),
         cache: Arc::new(RwLock::new(HashMap::new())),
