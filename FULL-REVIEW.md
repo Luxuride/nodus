@@ -27,9 +27,10 @@ Code size: web 31.8k Rust lines, recommender 21.6k, sdk 13.3k, hydrator 1.1k.
 2. **Misskey storage is fixed by a compatibility key.** `status.remote_id` keeps the
    opaque id; `status.mastodon_id` holds a stable FNV-1a hash for legacy joins. A future
    schema can move to text ids without changing feed cursors.
-3. **The web server does not call the hydrator.** `web/crates/web-server/src/public_api.rs`
-   still fetches origins directly. The hydrator exists on `10.0.1.17:8091` but the
-   same-origin BFF has no `NODUS_HYDRATE_URL` client yet.
+3. **The web server now calls the hydrator.** `web/crates/web-server/src/public_api.rs`
+   resolves local shadow profiles to their origin and falls back to `NODUS_HYDRATE_URL`
+   (`http://10.0.1.17:8091` on LXC 100) when the origin's Mastodon API fails or is empty.
+   Verified `Colon_BR@misskey.io` renders 7,250 origin posts anonymously.
 4. **Hydrator search needs a token.** Mastodon `/api/v2/search` returns 401 anonymously;
    `NODUS_HYDRATE_SEARCH_TOKEN` is now forwarded as a bearer token, otherwise search
    reports the upstream 401.
