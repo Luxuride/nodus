@@ -4,18 +4,22 @@ A recommendation engine for Mastodon — people to follow, derived from what
 similar people already follow, like and reply to — plus a web client that shows
 them in a **Feed** tab next to the timelines.
 
-This repository is the **superproject**: it holds the dev environment and pins the
-three projects that make up the system.
+This repository is the **superproject**: it holds the dev environment and pins every
+project that makes up the system.
 
 | Submodule | Repository | What it is |
 | --- | --- | --- |
-| `sdk/` | `nodus-sdk` | The client SDK: wire contract, Mastodon domain model, and the client state machine (`AppState`, `Command`, four ports). Source of truth for client state. |
+| `sdk/` | `nodus-sdk` | The client SDK: shared model, Mastodon/Misskey adapters, client state machine (`AppState`, `Command`, four ports). Source of truth for client state. |
+| `server-sdk/` | `nodus-server-sdk` | Server-side protocol SDK: ActivityPub objects and federation primitives. |
+| `hydrator/` | `nodus-hydrator` | Public federation reads: resolves profiles, posts, graphs and threads from origin instances. |
 | `recommender/` | `nodus-recommender` | Recommendation engine, background sync worker, API, database migrations. |
-| `web/` | `nodus-web` | Leptos/CSR web client. Renders SDK state; owns no Mastodon logic. |
+| `web/` | `nodus-web` | Leptos SSR/CSR web client. Renders SDK state; owns no Mastodon logic. |
+| `nodus-backend/` | `nodus-backend` | The Nodus server API and storage layer. |
 
 The boundary is deliberate: the recommender computes rankings and never renders; the
-web client renders and never scores; the SDK sits between them and is the only
-place that knows what the client's state looks like. See
+web client renders and never scores; the client SDK sits between them and is the only
+place that knows what client state looks like; the server SDK owns protocol work that
+never runs in a client. See
 [`sdk/docs/`](sdk/docs/README.md) (start with
 [02-architecture.md](sdk/docs/02-architecture.md)) and
 [`web/docs/02-architecture.md`](web/docs/02-architecture.md).
@@ -25,9 +29,11 @@ place that knows what the client's state looks like. See
 ```text
 Nodus/
 ├── .devcontainer/        Rust 1.99, wasm32 target, trunk, docker CLI, zsh
-├── .gitmodules           sdk → recommender → web
-├── sdk/                  crates/{shared,instance,sdk}
-│   └── docs/             README, 01-scope … 04-roadmap
+├── .gitmodules           sdk, server-sdk, hydrator, recommender, web, nodus-backend
+├── sdk/                  crates/{shared,client-core,mastodon,misskey,client-sdk,runtime,state,discovery,persist,protocol}
+│   └── docs/             README, 01-scope … 06-crates
+├── server-sdk/           crates/{activitypub,federation,server}
+├── hydrator/             crates/{hydrator,service}
 ├── recommender/
 │   ├── compose.yml       Postgres 17 + pgvector
 │   ├── crates/           {core,store,ingest,api}
