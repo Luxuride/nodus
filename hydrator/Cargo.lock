@@ -687,6 +687,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "nodus-client-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "url",
+]
+
+[[package]]
 name = "nodus-hydrate"
 version = "0.1.0"
 dependencies = [
@@ -705,8 +715,8 @@ name = "nodus-hydrator"
 version = "0.1.0"
 dependencies = [
  "nodus-activitypub-sdk",
- "nodus-instance",
- "nodus-instance-misskey",
+ "nodus-client-core",
+ "nodus-misskey",
  "reqwest",
  "serde",
  "serde_json",
@@ -715,20 +725,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "nodus-instance"
+name = "nodus-misskey"
 version = "0.1.0"
 dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "url",
-]
-
-[[package]]
-name = "nodus-instance-misskey"
-version = "0.1.0"
-dependencies = [
- "nodus-instance",
+ "nodus-client-core",
  "serde",
  "serde_json",
  "url",

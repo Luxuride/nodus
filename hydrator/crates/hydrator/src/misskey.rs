@@ -1,7 +1,7 @@
 //! Misskey's JSON API, for the same public shapes the Mastodon path returns.
 
-use nodus_instance::model::{Account as ModelAccount, Status as ModelStatus};
-use nodus_instance_misskey::convert;
+use nodus_client_core::model::{Account as ModelAccount, Status as ModelStatus};
+use nodus_misskey::convert;
 use serde_json::{Value, json};
 
 use crate::{Account, Emoji, Error, Hydrator, Media, Page, Post};

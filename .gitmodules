@@ -7,3 +7,6 @@
 [submodule "web"]
 	path = web
 	url = git@github.com:nodus-social/nodus-web.git
+[submodule "nodus-backend"]
+	path = nodus-backend
+	url = git@github.com:nodus-social/nodus-backend.git
