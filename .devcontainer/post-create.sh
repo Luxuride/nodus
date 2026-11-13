@@ -12,6 +12,13 @@ echo "== toolchain =="
 rustc --version
 cargo --version
 
+echo "== media tools =="
+if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq ffmpeg
+fi
+ffmpeg -version | head -1
+
 echo "== wasm32 target =="
 rustup target add wasm32-unknown-unknown
 
